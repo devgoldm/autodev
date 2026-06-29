@@ -91,14 +91,17 @@ hotfix/<slug>   →  main  (+ back-merge → develop)
 
 ### Claiming work (atomic)
 
-The build loop has **no global build lock** — each machine claims a single issue atomically, so N
-machines each hold a different one. The full protocol (stale-claim reaper, self-recovery guard,
-claim, server-timestamp tiebreak, loser-deletes-claim) lives in the **git-host adapter's *Claiming
-work* section** because it depends on the host's commands. Summary: relabel `ready→in-progress`, post
-a `🤖 autodev-claim host=<hostname>` comment, wait ~12s, and the winner is the **earliest
-server-side `createdAt`** (immune to local clock skew), ties broken by lexical hostname; losers
-delete their own claim comment and try the next issue. Staggering schedules makes contention
-near-zero; the protocol is the correctness backstop.
+The build loop has **no global build lock** — each build loop claims a single issue atomically, so N
+loops each hold a different one. Coordination is by **worker id** (the machine's hostname plus an
+optional suffix), not by machine, so you can run several build loops on **one** machine as well as
+across many. The full protocol (stale-claim reaper, self-recovery guard, claim, server-timestamp
+tiebreak, loser-deletes-claim) lives in the **git-host adapter's *Claiming work* section** because it
+depends on the host's commands. Summary: relabel `ready→in-progress`, post a
+`🤖 autodev-claim worker=<worker-id>` comment, wait ~12s, and the winner is the **earliest
+server-side `createdAt`** (immune to local clock skew), ties broken by lexical worker id; losers
+delete their own claim comment and try the next issue. The self-recovery guard keys on the worker id,
+so loops on the same machine don't block each other. Staggering schedules makes contention near-zero;
+the protocol is the correctness backstop.
 
 **Isolation & cleanup (the hard invariant):** the contributor's live checkout is a **read-only
 base** — a loop never switches its branch or edits its working tree. The build/refactor steps do all

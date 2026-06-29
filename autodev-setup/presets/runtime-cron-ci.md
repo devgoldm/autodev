@@ -8,7 +8,7 @@ Record `config.loop.runtime` = this file (or a `runtime-<name>.md` you derive fr
 
 The loops are agent prompts, so the runtime must invoke an agent non-interactively on a schedule:
 
-- **cron + headless agent CLI** on a server: a crontab entry per loop runs the agent against the task prompt (e.g. `0 * * * * cd <repo> && <agent-cli> --skill autodev-build`). Stagger build machines onto different minutes exactly as in the machine-local runtime.
+- **cron + headless agent CLI** on a server: a crontab entry per build loop runs the agent against the task prompt (e.g. `0 * * * * cd <repo> && <agent-cli> --skill autodev-build`). Run as many build loops as you want — across servers and/or several on one host (each with a distinct `<WORKER_SUFFIX>` + `<DEV_PORT>`) — staggered onto different minutes exactly as in the machine-local runtime.
 - **CI scheduled workflows**: a scheduled pipeline (GitHub Actions `schedule:`, GitLab scheduled pipelines, etc.) runs the agent in a job. `autodev-build` can fan out across runners; `autodev-release` + `autodev-bug-hunt` run as single scheduled jobs.
 
 The build loop's worktree isolation matters less on disposable CI runners (each job is a fresh checkout) but keep it for server-cron, where the host has a live checkout.

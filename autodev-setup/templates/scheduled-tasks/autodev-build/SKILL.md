@@ -13,16 +13,22 @@ description: Autodev BUILD loop — atomically claim one ready-for-agent issue, 
                               or the project's flag mechanism; remove if the project has no flags
        <SEED_CMD>             one-shot local test-data seed, or remove if none
        <DEV_PORT>             a non-default dev port so the loop never collides with a human dev server
+                              (must be UNIQUE per build loop — see <WORKER_SUFFIX>)
        <DEV_CMD>              command to start the stack on <DEV_PORT> (background)
        <TEST_CMD>/<BUILD_CMD> the project's verify commands (tests + typecheck/build)
-     Schedule HOURLY, notifyOnCompletion:false (self-notifies on escalation). On extra machines use a
-     DIFFERENT cron minute so claims rarely contend. Keep the HARD INVARIANT + claim protocol intact.
+       <WORKER_SUFFIX>        leave EMPTY for the one (default) build loop on a machine. To run MORE
+                              than one build loop on the SAME machine, give each extra loop a distinct
+                              suffix (e.g. -2, -3) AND its own <DEV_PORT>. Worker id = hostname+suffix.
+     Schedule HOURLY, notifyOnCompletion:false (self-notifies on escalation). You can run as many of
+     these loops as you want — across machines and/or several on one machine (default: one per machine,
+     which keeps token spend predictable). Give each loop a DIFFERENT cron minute so claims rarely
+     contend. Keep the HARD INVARIANT + claim protocol intact.
      Commands below use the GitHub `gh` adapter as the reference; if `config.gitHost` is another host,
      swap them for that adapter's equivalents (see `.claude/autodev/presets/`).
      (`PushNotification` is the Claude Code runtime primitive — under another loop runtime, use that
      runtime's notify channel per `config.loop.notify`; see the runtime preset.) -->
 
-You are the autodev BUILD loop, running as a scheduled task on this machine. Each run claims AT MOST ONE `ready-for-agent` issue, builds it, and opens a PR into `<INTEGRATION_BRANCH>`. MULTIPLE MACHINES may run this loop concurrently — the claim protocol below guarantees no two machines build the same issue. It must be idempotent and safe. This loop NEVER ships, releases, refactors, or runs /vision (releases run in `autodev-release`; issue creation is the interactive /vision front door + the bug-hunt loop).
+You are the autodev BUILD loop, running as a scheduled task. Each run claims AT MOST ONE `ready-for-agent` issue, builds it, and opens a PR into `<INTEGRATION_BRANCH>`. MANY of these loops may run concurrently — on different machines and/or several on one machine — and the claim protocol below (keyed on a unique WORKER id, not the machine) guarantees no two ever build the same issue. It must be idempotent and safe. This loop NEVER ships, releases, refactors, or runs /vision (releases run in `autodev-release`; issue creation is the interactive /vision front door + the bug-hunt loop).
 
 REPO (owner's LIVE checkout — treat as READ-ONLY base): `<REPO_PATH>`
 GitHub repo for `gh`/issues/PRs: `<REPO_SLUG>`
@@ -31,27 +37,27 @@ HARD INVARIANT: never switch the main checkout's branch, never edit its working 
 SETUP EACH RUN:
 1. `cd <REPO_PATH>` and run `git fetch origin --prune`. Do NOT change its checked-out branch.
 2. Read `.claude/autodev/METHODOLOGY.md`, `.claude/autodev/ORCHESTRATION.md`, and `.claude/autodev/config.json`.
-3. `<ENV_SOURCE>` to load the read-only deploy-monitoring credential and any flag/staging-access creds. NEVER echo, print, log, or commit these values — build request headers inline from the env vars.
-4. `HOST=$(scutil --get LocalHostName 2>/dev/null || hostname -s)` — this string identifies THIS machine in claim comments.
+3. `<ENV_SOURCE>` to load the flag-management token (if this project manages flags via an API) and any gitignored secrets the local dev server needs to run. NEVER echo, print, log, or commit these values — build request headers inline from the env vars. (The build loop does NOT monitor production or touch staging — the read-only monitoring credential and staging-access token belong to the primary's release/bug-hunt loops, not here.)
+4. `WORKER="$(scutil --get LocalHostName 2>/dev/null || hostname -s)<WORKER_SUFFIX>"` — this string uniquely identifies THIS build loop in claim comments (`<WORKER_SUFFIX>` is empty for a machine's single default loop, or `-2`/`-3`/… for additional loops on the same machine).
 
-CLAIM MARKER: a claim comment is a comment whose body is exactly `🤖 autodev-claim host=<HOST>` (one per machine per issue). `claimTtlHours` = 3 (see config `loop.claim`). (See the git-host adapter's "Claiming work" section.)
+CLAIM MARKER: a claim comment is a comment whose body is exactly `🤖 autodev-claim worker=<WORKER>` (one per build loop per issue). `claimTtlHours` = 3 (see config `loop.claim`). (See the git-host adapter's "Claiming work" section.)
 
 Run the steps in order:
 
 — STEP 0 · STALE-CLAIM REAPER. For each open issue labeled `in-progress`:
    - If it has an OPEN PR referencing it (a PR body containing `Closes #<N>`) OR is labeled `in-review` OR `parked` → leave it (active build / awaiting CI / parked).
-   - Else look at its newest claim comment (`🤖 autodev-claim host=`). If that comment's GitHub `createdAt` is older than 3h — OR it has NO claim comment and has been `in-progress` for >3h — it is an ABANDONED build: relabel it back `ready-for-agent` (remove `in-progress`) and comment `♻️ reclaiming stale build (no progress in >3h)`. Never reap an issue whose claim is younger than the TTL.
+   - Else look at its newest claim comment (`🤖 autodev-claim worker=`). If that comment's GitHub `createdAt` is older than 3h — OR it has NO claim comment and has been `in-progress` for >3h — it is an ABANDONED build: relabel it back `ready-for-agent` (remove `in-progress`) and comment `♻️ reclaiming stale build (no progress in >3h)`. Never reap an issue whose claim is younger than the TTL.
 
 — STEP 1 · STUCK-CI SCAN. For any issue labeled `in-review` whose build PR has FAILED required checks: relabel it `parked` (remove `in-review`), comment the failing check name, and PushNotification "🚨 STUCK: #<N> CI red — needs a human". This is just relabeling; continue (it does not consume your one build).
 
-— STEP 2 · SELF-RECOVERY GUARD. If any open `in-progress` issue has a newest claim comment with `host=$HOST` (THIS machine) and NO open build PR yet, a prior run on this machine is still mid-build (or crashed within the TTL). Do NOT claim a new issue this run — exit quietly with "idle: this host already holds in-flight claim #<N>" (the reaper will free it after the TTL if it truly died).
+— STEP 2 · SELF-RECOVERY GUARD. If any open `in-progress` issue has a newest claim comment with `worker=$WORKER` (THIS loop) and NO open build PR yet, a prior run of this same loop is still mid-build (or crashed within the TTL). Do NOT claim a new issue this run — exit quietly with "idle: this worker already holds in-flight claim #<N>" (the reaper will free it after the TTL if it truly died). Note this guards only THIS worker id, so other build loops — including others on the same machine with a different `<WORKER_SUFFIX>` — are unaffected.
 
 — STEP 3 · CLAIM ONE ISSUE (atomic). List open issues labeled `ready-for-agent`. If none → exit quietly "idle: no ready-for-agent issues". Otherwise attempt to claim in pick order — `priority:high` > `priority:med` > `priority:low`, then oldest-created — trying up to ~3 candidates until one is won:
    a. Pick the top candidate #N.
    b. Relabel: `gh issue edit <N> --add-label in-progress --remove-label ready-for-agent` (idempotent if a racing machine already did it).
-   c. Post your claim: `gh issue comment <N> --body "🤖 autodev-claim host=$HOST"`.
-   d. Wait ~12s (let any racing claim land), then fetch ALL claim comments on #N WITH timestamps: `gh issue view <N> --json comments` and keep comments whose body starts `🤖 autodev-claim host=`.
-   e. WINNER = the claim comment with the EARLIEST GitHub `createdAt` (authoritative server time — immune to local clock skew); break ties by lexical `host` string. If the winner's host == `$HOST` → you own #N; proceed to BUILD.
+   c. Post your claim: `gh issue comment <N> --body "🤖 autodev-claim worker=$WORKER"`.
+   d. Wait ~12s (let any racing claim land), then fetch ALL claim comments on #N WITH timestamps: `gh issue view <N> --json comments` and keep comments whose body starts `🤖 autodev-claim worker=`.
+   e. WINNER = the claim comment with the EARLIEST GitHub `createdAt` (authoritative server time — immune to local clock skew); break ties by lexical `worker` string. If the winner's worker == `$WORKER` → you own #N; proceed to BUILD.
    f. If you LOST: delete YOUR claim comment — derive its numeric id from the comment `url` (the digits after `#issuecomment-`) and run `gh api --method DELETE /repos/<REPO_SLUG>/issues/comments/<id>`. Do NOT touch labels (the winner keeps `in-progress`). Skip #N and try the next candidate.
    If all attempts were lost/contended → exit quietly "idle: all candidates claimed by other machines".
 
@@ -71,7 +77,7 @@ Run the steps in order:
 
 GUARDRAILS:
 - Never deploy or migrate from this machine — the local deploy-monitoring credential is READ-ONLY; production deploys happen only via CI on merge to production. Pushing branches/PRs is fine (CI deploys, not the machine).
-- The atomic per-issue claim (STEP 3) is the only concurrency control — there is NO global "one build at a time" lock; each machine builds at most one issue per run, and different machines build different issues in parallel. Stagger machines onto different cron minutes to minimise claim contention.
+- The atomic per-issue claim (STEP 3) is the only concurrency control — there is NO global "one build at a time" lock; each build loop builds at most one issue per run, and different loops (on different machines, or several on one machine with distinct `<WORKER_SUFFIX>` + `<DEV_PORT>`) build different issues in parallel. Stagger loops onto different cron minutes to minimise claim contention.
 - Production is observability-only: never act as a user in production. To exercise the app as a user, use local dev. The dev test account is local/staging only.
 - Treat env values as secrets: source/symlink them, never echo/print/log/commit them.
 - feature→integration merges use `--squash`. Always remove any worktree you created AND delete its local branch ref before finishing. Commit messages end with the project's required Co-Authored-By trailer.

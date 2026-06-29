@@ -54,13 +54,17 @@
     "frontDoor": "local-session",
     "notify": "push",
     "approval": "label:release:approved",
+    "build": {
+      "instancesPerMachine": 1,
+      "notes": "How many build loops run on a single machine. Default 1 (keeps token spend predictable). To run more, add an extra autodev-build scheduled task per instance, each with a distinct WORKER_SUFFIX (-2, -3, …), its own DEV_PORT, and a staggered cron minute. You can also just add more machines. There is no upper limit beyond your token budget and the machine's resources."
+    },
     "claim": {
       "mechanism": "claim-comment",
       "marker": "🤖 autodev-claim",
-      "hostFrom": "scutil --get LocalHostName 2>/dev/null || hostname -s",
+      "workerFrom": "$(scutil --get LocalHostName 2>/dev/null || hostname -s)<WORKER_SUFFIX>",
       "claimTtlHours": 3,
-      "tiebreak": "createdAt-then-hostname",
-      "notes": "The build loop claims a ready-for-agent work item atomically so N machines never build the same one: relabel ready->in-progress, post `🤖 autodev-claim host=<hostname>`, wait ~12s, re-read all claim comments; WINNER = earliest git-host server createdAt (ties by lexical hostname). Loser deletes its own claim comment and tries the next item. A stale-claim reaper relabels back to ready-for-agent any in-progress item whose newest claim is older than claimTtlHours with no open PR. This REPLACES any global one-build-at-a-time lock. See the git-host adapter's 'Claiming work' section."
+      "tiebreak": "createdAt-then-worker",
+      "notes": "The build loop claims a ready-for-agent work item atomically so no two build loops ever build the same one — coordination is by WORKER id (hostname + optional suffix), NOT by machine, so several loops can share one machine: relabel ready->in-progress, post `🤖 autodev-claim worker=<WORKER>`, wait ~12s, re-read all claim comments; WINNER = earliest git-host server createdAt (ties by lexical worker id). Loser deletes its own claim comment and tries the next item. A stale-claim reaper relabels back to ready-for-agent any in-progress item whose newest claim is older than claimTtlHours with no open PR. The self-recovery guard keys on the worker id, so loops on the same machine don't block each other. This REPLACES any global one-build-at-a-time lock. See the git-host adapter's 'Claiming work' section."
     },
     "release": {
       "host": "primary-only",

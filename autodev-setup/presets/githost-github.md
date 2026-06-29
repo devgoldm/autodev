@@ -59,17 +59,17 @@ JSON
 
 (Adjust per current GitHub API; same for `develop`.)
 
-## Claiming work (atomic, multi-machine)
+## Claiming work (atomic, multi-loop)
 
-The build loop has **no global build lock** — each machine claims a single issue atomically, so N machines each hold a different one. A **claim comment** is a comment whose body is exactly `🤖 autodev-claim host=<HOST>` (`config.loop.claim`; `claimTtlHours` default 3).
+The build loop has **no global build lock** — each build loop claims a single issue atomically, so N loops each hold a different one. The claim identity is a **worker id** — the machine's hostname plus an optional suffix — so you can run several build loops on **one** machine (each with a distinct suffix), not just one per machine. A **claim comment** is a comment whose body is exactly `🤖 autodev-claim worker=<WORKER>` (`config.loop.claim`; `claimTtlHours` default 3).
 
 1. **Stale-claim reaper (first):** for each open `in-progress` issue, read its newest `🤖 autodev-claim` comment. If it is older than `claimTtlHours` **and** the issue has no open PR (`Closes #N`) **and** it isn't `parked`/`in-review`, relabel it back to `ready-for-agent` (comment "♻️ reclaiming stale build").
-2. **Self-recovery:** if **this hostname** already owns an unfinished claim (its claim comment, no PR yet), skip claiming a new one this run.
-3. **Claim:** pick the top `ready-for-agent` (priority label, then oldest-created). `gh issue edit N --add-label in-progress --remove-label ready-for-agent`, then post `🤖 autodev-claim host=<hostname>`.
-4. **Resolve:** sleep ~12s, fetch **all** `autodev-claim` comments on the issue (`gh issue view <N> --json comments`). **Winner = earliest GitHub `createdAt`** (authoritative server time, immune to local clock skew), ties broken by lexical hostname. If this host is **not** the winner: delete its own claim comment (`gh api -X DELETE /repos/<slug>/issues/comments/<id>` — id is the digits after `#issuecomment-` in the comment `url`), leave labels alone (the winner keeps `in-progress`), and try the **next** `ready-for-agent` issue (bounded to a few retries, then idle).
-5. **Build** the won issue. One build per run.
+2. **Self-recovery:** if **this worker id** already owns an unfinished claim (its claim comment, no PR yet), skip claiming a new one this run. (Keyed on the worker id, so other loops — including others on the same machine — are unaffected.)
+3. **Claim:** pick the top `ready-for-agent` (priority label, then oldest-created). `gh issue edit N --add-label in-progress --remove-label ready-for-agent`, then post `🤖 autodev-claim worker=<WORKER>`.
+4. **Resolve:** sleep ~12s, fetch **all** `autodev-claim` comments on the issue (`gh issue view <N> --json comments`). **Winner = earliest GitHub `createdAt`** (authoritative server time, immune to local clock skew), ties broken by lexical worker id. If this worker is **not** the winner: delete its own claim comment (`gh api -X DELETE /repos/<slug>/issues/comments/<id>` — id is the digits after `#issuecomment-` in the comment `url`), leave labels alone (the winner keeps `in-progress`), and try the **next** `ready-for-agent` issue (bounded to a few retries, then idle).
+5. **Build** the won issue. One build per loop per run.
 
-Staggering machines onto different schedules makes real contention near-zero; the protocol is the correctness backstop. (`hostname` from `scutil --get LocalHostName 2>/dev/null || hostname -s` — works on macOS and Linux.)
+Staggering loops onto different schedules makes real contention near-zero; the protocol is the correctness backstop. The **worker id** = `<hostname><suffix>`, where hostname is `scutil --get LocalHostName 2>/dev/null || hostname -s` (works on macOS and Linux) and the suffix is empty for a machine's default loop or `-2`/`-3`/… for additional loops on that same machine.
 
 ## Adapting to another host
 

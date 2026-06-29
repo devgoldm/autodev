@@ -14,7 +14,7 @@ Cloud routines were tried and abandoned: the remote build environment kept faili
 
 Create all three via `mcp__scheduled-tasks`, copying each filled-in template from `templates/scheduled-tasks/` to `~/.claude/scheduled-tasks/<name>/SKILL.md`:
 
-- **`autodev-build`** — `30 * * * *` (hourly), `notifyOnCompletion:false` (self-notifies on escalation). On **each** build machine, at a **different cron minute** so claims rarely contend.
+- **`autodev-build`** — `30 * * * *` (hourly), `notifyOnCompletion:false` (self-notifies on escalation). Run one per build loop, each at a **different cron minute** so claims rarely contend. Default is one loop per machine; to add more throughput, create extra `autodev-build` tasks — on more machines, and/or **several on one machine**, each with a distinct `<WORKER_SUFFIX>` (`-2`, `-3`, …) and its own `<DEV_PORT>`. Coordination is by worker id, so same-machine loops never collide.
 - **`autodev-release`** — `45 9 * * *` (daily, machine-local — cron follows the clock through DST), `notifyOnCompletion:false`, **primary machine only** (it owns prod monitoring + the approval gate).
 - **`autodev-bug-hunt`** — daily, `notifyOnCompletion:true`, **primary**.
 
@@ -34,6 +34,6 @@ The owner's **front door (grilling) is NOT a scheduled task** — it's a live, o
 
 ## Host facts the templates use
 
-- **Hostname** (claim identity): `scutil --get LocalHostName 2>/dev/null || hostname -s` — works on macOS and Linux.
+- **Worker id** (claim identity): `$(scutil --get LocalHostName 2>/dev/null || hostname -s)<WORKER_SUFFIX>` — the hostname (macOS/Linux) plus an optional suffix that's empty for a machine's default build loop and `-2`/`-3`/… for additional loops on that same machine.
 - **Worktrees** under `.claude/worktrees/` in the live checkout; removed (plus the local branch ref) before each run finishes.
 - **Read-only monitoring credential** + flag-management token + any staging-access token live in the host's **gitignored** env, loaded via `<ENV_SOURCE>` (e.g. `source .env && source .env.local`). Never echoed, printed, logged, or committed.

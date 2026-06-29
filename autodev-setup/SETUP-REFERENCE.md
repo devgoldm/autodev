@@ -68,7 +68,7 @@ The cascade runs as **three scheduled tasks** registered with the chosen **loop 
 
 Create all three from `templates/scheduled-tasks/`, filling every `<PLACEHOLDER>` with this project's values:
 
-- **`autodev-build`** — hourly, self-notifies on escalation. Build-only: **atomically claim** one `ready-for-agent` work item (see the git-host adapter's *Claiming work* section), build it in a worktree, verify locally, PR into the integration branch (auto-merge), label `in-review`. **Multi-machine:** run this task on as many machines as you want, each at a **staggered** schedule so claims rarely contend. There is **no global build lock** — the per-issue claim is the only concurrency control.
+- **`autodev-build`** — hourly, self-notifies on escalation. Build-only: **atomically claim** one `ready-for-agent` work item (see the git-host adapter's *Claiming work* section), build it in a worktree, verify locally, PR into the integration branch (auto-merge), label `in-review`. **Scale freely:** run as many build loops as you want — on extra machines and/or several on one machine (default `config.loop.build.instancesPerMachine: 1`, which keeps token spend predictable). Each loop is a separate `autodev-build` task with a distinct **worker suffix** + **dev port**, on a **staggered** schedule so claims rarely contend. There is **no global build lock** — the per-loop claim (keyed on worker id, not machine) is the only concurrency control.
 - **`autodev-release`** — daily, **primary machine/host only** (it owns prod monitoring + the approval gate). Per run, precedence **Ship → Release-ask → Refactor(idle)**: Ship merges the frozen `release/*`→`main` if approved, then flips prod flags + close-watches + back-merges `main`→`develop` + runs a refactor pass; else Release-ask cuts+freezes a `release/<version>` branch, opens the PR, runs the authoritative review + staging evidence, and notifies; else a rate-limited idle `/refactor-pass`.
 - **`autodev-bug-hunt`** — daily, **primary**. Logs-only prod triage → opens `ready-for-agent` bug items (feeds the build loop).
 
@@ -102,7 +102,8 @@ The owner's **front door (grilling) is NOT a scheduled task** — it is a live, 
     "frontDoor": "named-session | local-session",
     "notify": "<runtime notification channel, e.g. push>",
     "approval": "<runtime approval signal, e.g. label:release:approved>",
-    "claim": { "mechanism": "claim-comment", "marker": "🤖 autodev-claim", "hostFrom": "scutil --get LocalHostName || hostname -s", "claimTtlHours": 3, "tiebreak": "createdAt-then-hostname" },
+    "build": { "instancesPerMachine": 1 },
+    "claim": { "mechanism": "claim-comment", "marker": "🤖 autodev-claim", "workerFrom": "$(scutil --get LocalHostName || hostname -s)<WORKER_SUFFIX>", "claimTtlHours": 3, "tiebreak": "createdAt-then-worker" },
     "release": { "host": "primary-only" }
   },
   "workTracker": { "type": "host-issues | backlog-file", "readyLabel": "ready-for-agent", "priority": "label-then-oldest", "prdsAsFiles": true },

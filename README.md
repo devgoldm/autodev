@@ -16,20 +16,21 @@ vision-driven workflow. I'll answer your setup questions.
 
 **Step 2 — answer its questions.** It interviews you, picks the presets for your stack/tracker/agent, and scaffolds everything. When it's done, you're running.
 
-**Step 3 *(optional)* — add more build machines.** Want it to build faster? On any other machine, **check out your repo**, then paste this — it joins as a build-only worker pulling from the same ticket queue (your primary machine keeps release + monitoring):
+**Step 3 *(optional)* — add more build loops.** Want it to build faster? Add build loops that run in parallel — on **another machine**, or even **several on one machine**. To add a machine: **check out your repo** on it, then paste this (your primary machine keeps release + monitoring):
 
 ```text
-Set this machine up as an additional autodev BUILD machine for this repo — not
-the primary. If the autodev-setup skill isn't installed, run
+Set this machine up as an additional autodev BUILD worker for this repo — not the
+primary. If the autodev-setup skill isn't installed, run
 `npx skills add devgoldm/autodev`. Read .claude/autodev/config.json and
-.claude/autodev/ORCHESTRATION.md, then register ONLY the autodev-build loop, on a
-staggered schedule (a different cron minute from the other machines). Do NOT add
-the release or bug-hunt loops — those stay on the primary. Install dependencies
-and set up the gitignored env it needs (read-only monitoring credential, flag
-token, any staging-access token); ask me for anything you don't have.
+.claude/autodev/ORCHESTRATION.md, then register ONLY the autodev-build loop, with a
+unique worker suffix and its own dev port, on a staggered schedule (a different cron
+minute from the other loops). Do NOT add the release or bug-hunt loops — those stay
+on the primary. Install dependencies and set up the gitignored env the build loop
+needs (the flag-management token if this project manages flags via an API, plus any
+local secrets the dev server needs to run); ask me for any values you don't have.
 ```
 
-Each extra machine builds in parallel on its own token budget; an atomic per-ticket claim keeps them from colliding. More detail in *Scale across machines* below.
+To add a second loop on a machine that's *already* a builder, paste the same prompt there — it registers another loop with a fresh worker suffix + dev port. Each loop builds in parallel on its own token budget; an atomic per-ticket claim keeps them from colliding. Default is one loop per machine, which keeps token spend predictable. More detail in *Scale across machines* below.
 
 ## How it works
 
@@ -81,14 +82,14 @@ A one-time setup pass scaffolds a project with:
 <details>
 <summary><b>Scale across machines (optional)</b></summary>
 
-The build loop is **horizontally scalable** — the cheapest way to ship faster is to add another machine that just builds in parallel. There's **no central coordinator and no global lock**: machines coordinate purely through the ticket queue. Adding one is two steps:
+The build loop is **horizontally scalable** — the cheapest way to ship faster is to add build loops that build in parallel. There's **no central coordinator and no global lock**: loops coordinate purely through the ticket queue, keyed on a per-loop **worker id** (hostname + suffix) — so you can run several on **one** machine as well as across many. Default is **one loop per machine** (predictable token spend); add more whenever you want.
 
-1. **Check out your repo** on the machine.
-2. **Paste the build-machine prompt** from Step 3 above.
+- **Add a machine** — two steps: (1) **check out your repo** on it, (2) **paste the build-loop prompt** from Step 3.
+- **Add a loop to an existing machine** — paste the same prompt there; it registers another loop with a fresh worker suffix + dev port.
 
-That's it — the prompt registers **only** the build loop (`autodev-build`) on a staggered schedule and leaves the **release** and **bug-hunt** loops on the **primary** machine (it owns production monitoring and the approval gate).
+Either way the prompt registers **only** the build loop (`autodev-build`) — staggered schedule, unique worker suffix, own dev port — and leaves the **release** and **bug-hunt** loops on the **primary** machine (it owns production monitoring and the approval gate).
 
-An **atomic per-ticket claim** guarantees no two machines ever build the same ticket. Each machine you add is another worker pulling from the same queue on its own token budget; removing one is just deleting its build task (in-flight work is auto-reclaimed). Full procedure: [`SKILL.md`](autodev-setup/SKILL.md) step 7, claim protocol in [`githost-github.md`](autodev-setup/presets/githost-github.md).
+An **atomic per-ticket claim** guarantees no two loops ever build the same ticket. Each loop is another worker pulling from the same queue on its own token budget; removing one is just deleting its build task (in-flight work is auto-reclaimed). Full procedure: [`SKILL.md`](autodev-setup/SKILL.md) step 7, claim protocol in [`githost-github.md`](autodev-setup/presets/githost-github.md).
 
 </details>
 
