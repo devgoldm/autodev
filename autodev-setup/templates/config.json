@@ -1,0 +1,93 @@
+{
+  "owner": {
+    "technicalLevel": "technical"
+  },
+  "stack": {
+    "preset": ".claude/autodev/presets/stack-cloudflare.md",
+    "describe": "worker+hono+vite-react-spa",
+    "respectExisting": true
+  },
+  "gitHost": {
+    "preset": ".claude/autodev/presets/githost-github.md",
+    "cli": "gh",
+    "repoSlug": ""
+  },
+  "flags": {
+    "mechanism": "flagship",
+    "stagingOnProdOff": true
+  },
+  "deploy": {
+    "mechanism": "ci-on-merge",
+    "branchingModel": "gitflow",
+    "productionBranch": "main",
+    "integrationBranch": "develop",
+    "releaseBranchPrefix": "release/",
+    "releaseVersionScheme": "date (release/YYYY-MM-DD, suffix -2/-3 for multiple per day) while pre-launch/unversioned",
+    "backMerge": "after every ship, back-merge main -> develop via a chore/sync-main-into-develop-<date> PR merged with a MERGE COMMIT, so main stays an ancestor of develop. develop<->main movement uses merge commits; feature/refactor->develop use --squash.",
+    "productionUrl": "",
+    "previewEnv": "preview",
+    "previewUrl": ""
+  },
+  "prodTest": {
+    "method": "observability-only",
+    "observability": "",
+    "loginUrl": "",
+    "envVars": []
+  },
+  "staging": {
+    "url": "",
+    "healthCheck": "",
+    "access": "none",
+    "accessEnvVars": [],
+    "devLogin": { "email": "", "password": "" }
+  },
+  "evidence": {
+    "host": "local-only-shown-in-transcript",
+    "tool": "",
+    "captureDir": "mktemp -d"
+  },
+  "loop": {
+    "runtime": ".claude/autodev/presets/runtime-claude-code.md",
+    "doc": ".claude/autodev/ORCHESTRATION.md",
+    "tasks": ["autodev-build", "autodev-release", "autodev-bug-hunt"],
+    "host": "",
+    "frontDoor": "local-session",
+    "notify": "push",
+    "approval": "label:release:approved",
+    "claim": {
+      "mechanism": "claim-comment",
+      "marker": "🤖 autodev-claim",
+      "hostFrom": "scutil --get LocalHostName 2>/dev/null || hostname -s",
+      "claimTtlHours": 3,
+      "tiebreak": "createdAt-then-hostname",
+      "notes": "The build loop claims a ready-for-agent work item atomically so N machines never build the same one: relabel ready->in-progress, post `🤖 autodev-claim host=<hostname>`, wait ~12s, re-read all claim comments; WINNER = earliest git-host server createdAt (ties by lexical hostname). Loser deletes its own claim comment and tries the next item. A stale-claim reaper relabels back to ready-for-agent any in-progress item whose newest claim is older than claimTtlHours with no open PR. This REPLACES any global one-build-at-a-time lock. See the git-host adapter's 'Claiming work' section."
+    },
+    "release": {
+      "host": "primary-only",
+      "notes": "autodev-release runs on the PRIMARY machine ONLY (owns prod monitoring + the approval gate). Secondary machines run ONLY autodev-build."
+    }
+  },
+  "workTracker": {
+    "type": "host-issues",
+    "readyLabel": "ready-for-agent",
+    "priority": "label-then-oldest",
+    "prdsAsFiles": true
+  },
+  "models": {
+    "subagents": "opus"
+  },
+  "escalation": {
+    "maxFixCycles": 3
+  },
+  "monitoring": {
+    "closeWatchMinutes": 60,
+    "pollSeconds": 270,
+    "steadyState": "daily"
+  },
+  "cloudflare": {
+    "_comment": "Only present when stack.preset is the Cloudflare preset; delete otherwise. See presets/stack-cloudflare.md.",
+    "accountId": "",
+    "auth": "scoped-api-token",
+    "tokenRecipe": ".claude/autodev/cloudflare-token.md"
+  }
+}
