@@ -56,7 +56,8 @@
     "approval": "label:release:approved",
     "build": {
       "instancesPerMachine": 1,
-      "notes": "How many build loops run on a single machine. Default 1 (keeps token spend predictable). To run more, add an extra autodev-build scheduled task per instance, each with a distinct WORKER_SUFFIX (-2, -3, …), its own DEV_PORT, and a staggered cron minute. You can also just add more machines. There is no upper limit beyond your token budget and the machine's resources."
+      "everyMinutes": 60,
+      "notes": "Build loops on THIS machine: how many run in parallel (instancesPerMachine, default 1) and how often each runs (everyMinutes, default 60 = hourly). Each instance is a separate autodev-build scheduled task with a distinct WORKER_SUFFIX (-2, -3, …) and its own DEV_PORT, auto-staggered evenly across everyMinutes (e.g. 2 instances @ everyMinutes 30 → offset 15 min apart). Both knobs are independent (more instances = more parallelism; lower everyMinutes = more frequent). You can also add more machines (each runs its own autodev-build with the same two knobs). No upper limit beyond token budget + machine resources. Default 1/hourly keeps token spend predictable."
     },
     "claim": {
       "mechanism": "claim-comment",

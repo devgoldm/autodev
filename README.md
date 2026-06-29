@@ -3,47 +3,42 @@
 **Describe what you want your app to do — autodev automates the rest of your dev flow.**
 No cloud agents, no control plane to stand up.
 
+![autodev architecture](docs/architecture.svg)
+
 ## Get started
 
-**Step 1 — paste this into your coding agent** (Claude Code, Cursor, Codex, …):
+**Paste this into your coding agent** (Claude Code, Cursor, Codex, …). It installs the skill, interviews you (stack, tracker, how many build loops and how often), and scaffolds everything:
 
 ```text
 Set up autodev in this project. If the autodev-setup skill isn't installed yet,
 install it by running `npx skills add devgoldm/autodev`. Then run the
 autodev-setup skill: interview me, pick the presets, and scaffold the
-vision-driven workflow. I'll answer your setup questions.
+vision-driven workflow.
 ```
 
-**Step 2 — answer its questions.** It interviews you, picks the presets for your stack/tracker/agent, and scaffolds everything. When it's done, you're running.
-
-**Step 3 *(optional)* — add more build loops.** Want it to build faster? Add build loops that run in parallel — on **another machine**, or even **several on one machine**. To add a machine: **check out your repo** on it, then paste this (your primary machine keeps release + monitoring):
+**Optional — add a build machine.** To build faster, run extra build loops on **another machine** (e.g. a teammate's, on their own token budget). They need access to your repo: have them check it out, then paste this:
 
 ```text
-Set this machine up as an additional autodev BUILD worker for this repo — not the
-primary. If the autodev-setup skill isn't installed, run
-`npx skills add devgoldm/autodev`. Read .claude/autodev/config.json and
-.claude/autodev/ORCHESTRATION.md, then register ONLY the autodev-build loop, with a
-unique worker suffix and its own dev port, on a staggered schedule (a different cron
-minute from the other loops). Do NOT add the release or bug-hunt loops — those stay
-on the primary. Install dependencies and set up the gitignored env the build loop
-needs (the flag-management token if this project manages flags via an API, plus any
-local secrets the dev server needs to run); ask me for any values you don't have.
+Set this machine up as an additional autodev build worker for this repo. If the
+autodev-setup skill isn't installed, run `npx skills add devgoldm/autodev`. Read
+.claude/autodev/config.json and .claude/autodev/ORCHESTRATION.md, then register only
+the autodev-build loop (don't add the release or bug-hunt loops). Install
+dependencies and set up the env it needs; ask me for any values you don't have.
 ```
 
-To add a second loop on a machine that's *already* a builder, paste the same prompt there — it registers another loop with a fresh worker suffix + dev port. Each loop builds in parallel on its own token budget; an atomic per-ticket claim keeps them from colliding. Default is one loop per machine, which keeps token spend predictable. More detail in *Scale across machines* below.
-
-## How it works
-
-![autodev architecture](docs/architecture.svg)
+<details>
+<summary><b>How it works</b></summary>
 
 You only ever do two things: **describe** what you want (a feature or a bug, in plain language), and **approve** a release (one signal on the release PR). Everything between is your own coding agent, running on a loop:
 
 1. **Front door — you describe it.** You talk to your agent; it grills you on the design, writes a spec (a PRD), and files a **ticket** in the tracker you already use. This is where you make the product decisions (the other is approving the release, below).
-2. **Build loop — it builds.** A scheduled agent run claims the top ticket, builds it behind a feature flag, verifies it (tests + actually running the app), and merges to `develop` → staging. Run this loop on as many machines as you like; they coordinate purely through the ticket queue, so they never collide.
+2. **Build loop — it builds.** A scheduled agent run claims the top ticket, builds it behind a feature flag, verifies it (tests + actually running the app), and merges to `develop` → staging. Run as many build loops as you like — several on your machine and/or on others — and they coordinate purely through the ticket queue, so they never collide.
 3. **Release loop — you approve, it ships.** Once a day a single agent run freezes a release, reviews it, gathers authenticated staging proof, and pings you. You approve; it merges to production and flips the flags on.
 4. **Bug-hunt loop — it watches.** It reads production logs and files new bug tickets straight back into the queue, closing the loop.
 
 The whole thing coordinates through **ordinary issues, labels, and PRs** — no central coordinator, no dashboard, no metered compute. It's just your agent, your token budget, and the tracker you already have.
+
+</details>
 
 ---
 
@@ -82,14 +77,12 @@ A one-time setup pass scaffolds a project with:
 <details>
 <summary><b>Scale across machines (optional)</b></summary>
 
-The build loop is **horizontally scalable** — the cheapest way to ship faster is to add build loops that build in parallel. There's **no central coordinator and no global lock**: loops coordinate purely through the ticket queue, keyed on a per-loop **worker id** (hostname + suffix) — so you can run several on **one** machine as well as across many. Default is **one loop per machine** (predictable token spend); add more whenever you want.
+The build loop is **horizontally scalable** — run as many build loops as you like and they build in parallel. There's **no central coordinator and no global lock**: loops coordinate purely through the ticket queue, keyed on a per-loop **worker id**, so they never build the same ticket. Two ways to add capacity:
 
-- **Add a machine** — two steps: (1) **check out your repo** on it, (2) **paste the build-loop prompt** from Step 3.
-- **Add a loop to an existing machine** — paste the same prompt there; it registers another loop with a fresh worker suffix + dev port.
+- **On your own machine — set it at setup.** The autodev-setup interview asks how many parallel build loops to run and how often (default: **one loop, hourly**). Ask for more and it registers that many `autodev-build` tasks, automatically staggered (e.g. two loops every 30 min, offset 15 min apart). Tune both knobs any time in `config.loop.build`.
+- **On another machine — paste the prompt.** To borrow a teammate's machine and token budget, have them check out your repo and paste the build-worker prompt from *Get started*. It adds an `autodev-build` loop there and nothing else.
 
-Either way the prompt registers **only** the build loop (`autodev-build`) — staggered schedule, unique worker suffix, own dev port — and leaves the **release** and **bug-hunt** loops on the **primary** machine (it owns production monitoring and the approval gate).
-
-An **atomic per-ticket claim** guarantees no two loops ever build the same ticket. Each loop is another worker pulling from the same queue on its own token budget; removing one is just deleting its build task (in-flight work is auto-reclaimed). Full procedure: [`SKILL.md`](autodev-setup/SKILL.md) step 7, claim protocol in [`githost-github.md`](autodev-setup/presets/githost-github.md).
+The **release** and **bug-hunt** loops always stay on the **primary** machine (it owns production monitoring and the approval gate). An **atomic per-ticket claim** guarantees no two loops ever build the same ticket; removing one is just deleting its build task (in-flight work is auto-reclaimed). Details: [`SKILL.md`](autodev-setup/SKILL.md) step 7, claim protocol in [`githost-github.md`](autodev-setup/presets/githost-github.md).
 
 </details>
 

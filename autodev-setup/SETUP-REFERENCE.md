@@ -102,7 +102,7 @@ The owner's **front door (grilling) is NOT a scheduled task** — it is a live, 
     "frontDoor": "named-session | local-session",
     "notify": "<runtime notification channel, e.g. push>",
     "approval": "<runtime approval signal, e.g. label:release:approved>",
-    "build": { "instancesPerMachine": 1 },
+    "build": { "instancesPerMachine": 1, "everyMinutes": 60 },
     "claim": { "mechanism": "claim-comment", "marker": "🤖 autodev-claim", "workerFrom": "$(scutil --get LocalHostName || hostname -s)<WORKER_SUFFIX>", "claimTtlHours": 3, "tiebreak": "createdAt-then-worker" },
     "release": { "host": "primary-only" }
   },
