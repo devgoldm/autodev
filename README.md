@@ -1,12 +1,24 @@
 # autodev
 
-An **agent skill** that sets up **autonomous, vision-driven development** on a project — using **your own agents, your own token budget, and the ticketing system you already use**. After setup, the owner's whole job is to write and refine a `VISION.md` and answer the occasional design question — agent sessions propose features, build them behind feature flags, verify them, ship them through a reviewed release gate, monitor production, and keep the codebase clean.
+**TL;DR — just describe what you want your app to do, and autodev automates the rest of your dev flow.** You make tickets (or just say what you want in plain language); your own coding agent builds, tests, releases, and monitors it — on your own token budget, through the ticketing system you already use. No cloud agents, no control plane, no infrastructure to stand up.
 
-It's a portable [skill](https://skills.sh) (`SKILL.md` format), so it installs into whatever coding agent you use — Claude Code, Cursor, and other agents — via `npx skills add` (see [Install](#install)).
+## Get started
 
-It is **stack-, git-host-, and runtime-neutral**. The methodology and the project commands don't assume a particular platform or agent; everything specific is supplied by a **preset** you pick at setup time.
+Paste this into your coding agent (Claude Code, Cursor, …):
 
-## Why this exists
+```text
+Set up autodev in this project. If the autodev-setup skill isn't installed yet,
+install it by running `npx skills add devgoldm/autodev`. Then run the
+autodev-setup skill: interview me, pick the presets, and scaffold the
+vision-driven workflow. I'll answer your setup questions.
+```
+
+Then just answer the questions — and you're running.
+
+---
+
+<details>
+<summary><b>What is this, and why?</b></summary>
 
 Most "autonomous agent" setups push you toward a hosted control plane: cloud agents you rent, a separate dashboard to babysit, infrastructure to stand up, and a metered bill that grows with the work. That's a lot of overhead for a small team or a solo developer who just wants their coding agent to keep shipping.
 
@@ -16,10 +28,15 @@ That means:
 
 - **No cloud agents required.** Everything runs as your own agent sessions; you stay inside your own token budget instead of renting metered compute.
 - **No control plane, no special infrastructure.** Coordination happens through your repo's issues/labels/PRs — things you already have. Want more throughput? Point another machine's loop at the same tickets; an atomic per-issue claim keeps them from colliding.
-- **Install-and-go.** Drop in the skill, point it at a ticketing system, and you're running. It's deliberately small enough for an individual or a small company to operate without a platform team.
+- **Install-and-go.** Drop in the skill, point it at a ticketing system, and you're running. Deliberately small enough for an individual or a small company to operate without a platform team.
 - **Use what you already have.** Your tracker, your git host, your stack, your model — all swappable presets, none of them assumed.
 
-## What you get
+After setup, the owner's whole job is to write and refine a `VISION.md` and answer the occasional design question. Agent sessions propose features, build them behind feature flags, verify them, ship them through a reviewed release gate, monitor production, and keep the codebase clean. The two human gates are **feature design** (a grilling conversation) and **release approval** (one signal on the release PR). Everything else runs unattended.
+
+</details>
+
+<details>
+<summary><b>What you get</b></summary>
 
 A one-time setup pass scaffolds a project with:
 
@@ -30,38 +47,27 @@ A one-time setup pass scaffolds a project with:
 - **An optional autonomous loop**: three scheduled tasks (build / release / bug-hunt) that carry an idea from "pushed" all the way to "shipped and monitored", contacting the owner only at the release gate.
 - **Living docs**: `CONTEXT.md`, PRDs under `docs/prds/`, and ADRs under `docs/adr/`, kept current so any cold agent session can pick the project up.
 
-The two human gates are **feature design** (a grilling conversation) and **release approval** (one signal on the release PR). Everything else runs unattended.
+</details>
 
-## Presets — how it stays universal
+<details>
+<summary><b>Presets — how it stays universal</b></summary>
 
-The neutral core refers to each choice by role; a preset fills it in. Pick one per axis at setup (recorded in `config.json`):
+It is **stack-, git-host-, and runtime-neutral**. The neutral core refers to each choice by role; a preset fills it in. Pick one per axis at setup (recorded in `config.json`):
 
 | Axis | Role | Reference preset | Generic option |
 |---|---|---|---|
 | **Stack** | what the app is built/deployed on | [`stack-cloudflare.md`](autodev-setup/presets/stack-cloudflare.md) (Workers + Hono + Vite/React + flags) | [`stack-generic.md`](autodev-setup/presets/stack-generic.md) — fill-in template for any stack |
 | **Git host** | repo, work tracker, PRs | [`githost-github.md`](autodev-setup/presets/githost-github.md) (GitHub via `gh`) | adapt the adapter to GitLab/Gitea/… |
-| **Loop runtime** | what runs the autonomous loops | [`runtime-claude-code.md`](autodev-setup/presets/runtime-claude-code.md) (Claude Code scheduled tasks + Push + label approval) — same pattern fits Cursor automations, Codex, or any agent with scheduling | [`runtime-cron-ci.md`](autodev-setup/presets/runtime-cron-ci.md) (server cron / CI) |
+| **Loop runtime** | what runs the autonomous loops | [`runtime-claude-code.md`](autodev-setup/presets/runtime-claude-code.md) (Claude Code scheduled tasks) — same pattern fits Cursor automations, Codex, or any agent with scheduling | [`runtime-cron-ci.md`](autodev-setup/presets/runtime-cron-ci.md) (server cron / CI) |
 
 Existing projects always take the generic stack path: autodev **detects and records** the existing stack, flag mechanism, test setup, and deploy pipeline — it never migrates or restructures your code.
 
-## Layout
+</details>
 
-```
-autodev-setup/
-  SKILL.md              The setup process (this is the skill Claude runs)
-  METHODOLOGY.md        The operating model — stack/host/runtime-neutral
-  SETUP-REFERENCE.md    Universal setup details + the config.json schema
-  presets/              Swappable stack / git-host / runtime presets
-  templates/            Files copied into the target project:
-    VISION.md  BACKLOG.md  PRD-FORMAT.md  ORCHESTRATION.md  config.json
-    vision/ build-next/ release/ bug-hunt/ refactor-pass/   (the five commands)
-    grill/                (autodev's bundled grilling skill, used by /vision)
-    scheduled-tasks/    (the three autonomous loops)
-```
+<details>
+<summary><b>Install options & layout</b></summary>
 
-## Install
-
-autodev is packaged as a portable [`SKILL.md`](https://skills.sh) skill, so it installs into 18+ coding agents (Claude Code, Cursor, Cline, Copilot, …) with the skills CLI:
+autodev is a portable [`SKILL.md`](https://skills.sh) skill, so it installs into 18+ coding agents (Claude Code, Cursor, Cline, Copilot, …) with the skills CLI:
 
 ```bash
 npx skills add devgoldm/autodev --skill autodev-setup
@@ -73,11 +79,24 @@ Or install it by hand — copy the skill directory into your agent's skills loca
 cp -R autodev-setup ~/.claude/skills/autodev-setup
 ```
 
-Then, in a project you want to set up, ask your agent to **"set up autodev"** (or invoke the skill). It will interview you, pick presets, scaffold or onboard, and wire up the loop. See [`autodev-setup/SKILL.md`](autodev-setup/SKILL.md) for the full process and [`autodev-setup/METHODOLOGY.md`](autodev-setup/METHODOLOGY.md) for the model it follows.
+Then ask your agent to **"set up autodev"** (or invoke the skill). See [`autodev-setup/SKILL.md`](autodev-setup/SKILL.md) for the full process and [`autodev-setup/METHODOLOGY.md`](autodev-setup/METHODOLOGY.md) for the model it follows.
 
-## Self-contained
+```
+autodev-setup/
+  SKILL.md              The setup process (the skill your agent runs)
+  METHODOLOGY.md        The operating model — stack/host/runtime-neutral
+  SETUP-REFERENCE.md    Universal setup details + the config.json schema
+  presets/              Swappable stack / git-host / runtime presets
+  templates/            Files copied into the target project:
+    VISION.md  BACKLOG.md  PRD-FORMAT.md  ORCHESTRATION.md  config.json
+    vision/ build-next/ release/ bug-hunt/ refactor-pass/   (the five commands)
+    grill/                (autodev's bundled grilling skill, used by /vision)
+    scheduled-tasks/    (the three autonomous loops)
+```
 
-Autodev ships everything its commands need **inside the project** — including its own bundled **`grill`** skill for the design-grilling step. The commands never depend on a skill from a contributor's personal global collection, so a project behaves identically for anyone who clones it. The only genuinely external dependency is a **browser-automation tool** for the two verification tiers (a tool, not a skill, with no single-vendor assumption). See METHODOLOGY § "Self-contained".
+**Self-contained:** everything the commands need ships inside the project — including autodev's own bundled **`grill`** skill — so a project behaves identically for anyone who clones it. The only genuinely external dependency is a browser-automation tool for the verification tiers (a tool, not a skill).
+
+</details>
 
 ## License
 
