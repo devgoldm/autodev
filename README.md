@@ -1,9 +1,11 @@
 # autodev
 
 **Describe what you want your app to do — autodev automates the rest of your dev flow.**
-No cloud agents, no control plane to stand up.
 
 ![autodev architecture](docs/architecture.svg)
+
+It all runs on **your own infrastructure**, on **your own allocated token budget**.<br>
+No cloud agents, no control plane, no platforms to spin up.
 
 ## Get started
 
@@ -26,6 +28,8 @@ the autodev-build loop (don't add the release or bug-hunt loops). Install
 dependencies and set up the env it needs; ask me for any values you don't have.
 ```
 
+---
+
 <details>
 <summary><b>How it works</b></summary>
 
@@ -39,8 +43,6 @@ You only ever do two things: **describe** what you want (a feature or a bug, in 
 The whole thing coordinates through **ordinary issues, labels, and PRs** — no central coordinator, no dashboard, no metered compute. It's just your agent, your token budget, and the tracker you already have.
 
 </details>
-
----
 
 <details>
 <summary><b>What is this, and why?</b></summary>
