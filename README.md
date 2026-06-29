@@ -38,7 +38,7 @@ To add a second loop on a machine that's *already* a builder, paste the same pro
 
 You only ever do two things: **describe** what you want (a feature or a bug, in plain language), and **approve** a release (one signal on the release PR). Everything between is your own coding agent, running on a loop:
 
-1. **Front door — you describe it.** You talk to your agent; it grills you on the design, writes a spec (a PRD), and files a **ticket** in the tracker you already use. This is the one place you make decisions.
+1. **Front door — you describe it.** You talk to your agent; it grills you on the design, writes a spec (a PRD), and files a **ticket** in the tracker you already use. This is where you make the product decisions (the other is approving the release, below).
 2. **Build loop — it builds.** A scheduled agent run claims the top ticket, builds it behind a feature flag, verifies it (tests + actually running the app), and merges to `develop` → staging. Run this loop on as many machines as you like; they coordinate purely through the ticket queue, so they never collide.
 3. **Release loop — you approve, it ships.** Once a day a single agent run freezes a release, reviews it, gathers authenticated staging proof, and pings you. You approve; it merges to production and flips the flags on.
 4. **Bug-hunt loop — it watches.** It reads production logs and files new bug tickets straight back into the queue, closing the loop.
