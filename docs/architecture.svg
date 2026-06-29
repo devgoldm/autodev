@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1310 560" font-family="ui-sans-serif, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow" markerWidth="9" markerHeight="9" refX="6.5" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+  </defs>
+
+  <rect x="1" y="1" width="1308" height="558" rx="16" fill="#f8fafc" stroke="#e2e8f0" stroke-width="2"/>
+
+  <!-- ============ BOXES ============ -->
+
+  <!-- B1 You (design gate) -->
+  <rect x="40" y="55" width="190" height="130" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2.5"/>
+  <text x="58" y="86" font-size="18" font-weight="700" fill="#0f172a">You</text>
+  <text x="58" y="106" font-size="11.5" font-weight="600" fill="#b45309">◆ design gate</text>
+  <text x="58" y="132" font-size="12.5" fill="#334155">Describe a feature</text>
+  <text x="58" y="150" font-size="12.5" fill="#334155">or bug, in words.</text>
+  <text x="58" y="168" font-size="12.5" fill="#334155">Get grilled once.</text>
+
+  <!-- B2 Ticket queue -->
+  <rect x="300" y="55" width="190" height="130" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="318" y="86" font-size="18" font-weight="700" fill="#0f172a">Ticket queue</text>
+  <text x="318" y="106" font-size="11.5" font-weight="600" fill="#64748b">your existing tracker</text>
+  <text x="318" y="132" font-size="12.5" fill="#334155">Issues · labels · PRs.</text>
+  <text x="318" y="150" font-size="12.5" fill="#334155">The single source</text>
+  <text x="318" y="168" font-size="12.5" fill="#334155">of truth.</text>
+
+  <!-- B3 Build loop (stacked = xN machines) -->
+  <rect x="574" y="69" width="190" height="130" rx="12" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <rect x="567" y="62" width="190" height="130" rx="12" fill="#e0edff" stroke="#93c5fd" stroke-width="1.5"/>
+  <rect x="560" y="55" width="190" height="130" rx="12" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+  <text x="578" y="86" font-size="18" font-weight="700" fill="#0f172a">Build loop</text>
+  <text x="578" y="106" font-size="11.5" font-weight="700" fill="#1d4ed8">× N · your machines</text>
+  <text x="578" y="132" font-size="12.5" fill="#334155">Claim a ticket, build</text>
+  <text x="578" y="150" font-size="12.5" fill="#334155">behind a flag, verify,</text>
+  <text x="578" y="168" font-size="12.5" fill="#334155">merge to develop.</text>
+
+  <!-- B4 Release loop (release gate) -->
+  <rect x="820" y="55" width="190" height="130" rx="12" fill="#fffbeb" stroke="#f59e0b" stroke-width="2.5"/>
+  <text x="838" y="86" font-size="18" font-weight="700" fill="#0f172a">Release loop</text>
+  <text x="838" y="106" font-size="11.5" font-weight="600" fill="#b45309">◆ release gate</text>
+  <text x="838" y="132" font-size="12.5" fill="#334155">Freeze, review +</text>
+  <text x="838" y="150" font-size="12.5" fill="#334155">staging proof,</text>
+  <text x="838" y="168" font-size="12.5" fill="#334155">you approve → ship.</text>
+
+  <!-- B5 Production -->
+  <rect x="1080" y="55" width="190" height="130" rx="12" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/>
+  <text x="1098" y="86" font-size="18" font-weight="700" fill="#0f172a">Production</text>
+  <text x="1098" y="106" font-size="11.5" font-weight="600" fill="#15803d">live &amp; monitored</text>
+  <text x="1098" y="132" font-size="12.5" fill="#334155">Flags flipped on,</text>
+  <text x="1098" y="150" font-size="12.5" fill="#334155">health watched.</text>
+
+  <!-- B6 Bug-hunt loop -->
+  <rect x="1080" y="300" width="190" height="100" rx="12" fill="#ffffff" stroke="#cbd5e1" stroke-width="1.5"/>
+  <text x="1098" y="332" font-size="16" font-weight="700" fill="#0f172a">Bug-hunt loop</text>
+  <text x="1098" y="356" font-size="12.5" fill="#334155">Watches prod logs,</text>
+  <text x="1098" y="374" font-size="12.5" fill="#334155">files new bug</text>
+  <text x="1098" y="392" font-size="12.5" fill="#334155">tickets.</text>
+
+  <!-- ============ ARROWS ============ -->
+  <line x1="232" y1="120" x2="295" y2="120" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="492" y1="120" x2="555" y2="120" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="770" y1="120" x2="815" y2="120" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <line x1="1012" y1="120" x2="1075" y2="120" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <text x="263" y="112" font-size="11" font-style="italic" fill="#64748b" text-anchor="middle">files</text>
+  <text x="523" y="112" font-size="11" font-style="italic" fill="#64748b" text-anchor="middle">claims</text>
+  <text x="792" y="112" font-size="11" font-style="italic" fill="#64748b" text-anchor="middle">develop</text>
+  <text x="1043" y="112" font-size="11" font-style="italic" fill="#64748b" text-anchor="middle">to main</text>
+
+  <!-- B5 -> B6 (watch) -->
+  <line x1="1175" y1="187" x2="1175" y2="296" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="1185" y="245" font-size="11" font-style="italic" fill="#64748b">watch</text>
+
+  <!-- B6 -> B2 feedback (new bug tickets) -->
+  <path d="M1175,402 V475 H395 V189" fill="none" stroke="#94a3b8" stroke-width="2" marker-end="url(#arrow)"/>
+  <text x="690" y="468" font-size="11.5" font-style="italic" fill="#64748b" text-anchor="middle">new bug tickets re-enter the queue</text>
+
+  <!-- ============ FOOTER ============ -->
+  <line x1="40" y1="512" x2="1270" y2="512" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="655" y="537" font-size="13" font-weight="600" fill="#475569" text-anchor="middle">Runs as your own agent sessions, on your own token budget — no cloud agents, no control plane to stand up.</text>
+</svg>

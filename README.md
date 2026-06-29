@@ -1,10 +1,11 @@
 # autodev
 
-**TL;DR — just describe what you want your app to do, and autodev automates the rest of your dev flow.** You make tickets (or just say what you want in plain language); your own coding agent builds, tests, releases, and monitors it — on your own token budget, through the ticketing system you already use. No cloud agents, no control plane, no infrastructure to stand up.
+**Describe what you want your app to do — autodev automates the rest of your dev flow.**
+No cloud agents, no control plane to stand up.
 
 ## Get started
 
-Paste this into your coding agent (Claude Code, Cursor, …):
+**Step 1 — paste this into your coding agent** (Claude Code, Cursor, Codex, …):
 
 ```text
 Set up autodev in this project. If the autodev-setup skill isn't installed yet,
@@ -13,9 +14,22 @@ autodev-setup skill: interview me, pick the presets, and scaffold the
 vision-driven workflow. I'll answer your setup questions.
 ```
 
-Then just answer the questions — and you're running.
+**Step 2 — answer its questions.** It interviews you, picks the presets for your stack/tracker/agent, and scaffolds everything. When it's done, you're running.
 
-**Want it to build faster?** Add more build machines anytime — each extra machine just runs the build loop in parallel on its own token budget, and an atomic per-ticket claim keeps them from colliding. See *Scale across machines* below.
+**Step 3 *(optional)* — scale across machines.** Want it to build faster? Add more build machines anytime — each one just runs the build loop in parallel on its own token budget, and an atomic per-ticket claim keeps them from colliding. See *Scale across machines* below.
+
+## How it works
+
+![autodev architecture](docs/architecture.svg)
+
+You only ever do two things: **describe** what you want (a feature or a bug, in plain language), and **approve** a release (one signal on the release PR). Everything between is your own coding agent, running on a loop:
+
+1. **Front door — you describe it.** You talk to your agent; it grills you on the design, writes a spec (a PRD), and files a **ticket** in the tracker you already use. This is the one place you make decisions.
+2. **Build loop — it builds.** A scheduled agent run claims the top ticket, builds it behind a feature flag, verifies it (tests + actually running the app), and merges to `develop` → staging. Run this loop on as many machines as you like; they coordinate purely through the ticket queue, so they never collide.
+3. **Release loop — you approve, it ships.** Once a day a single agent run freezes a release, reviews it, gathers authenticated staging proof, and pings you. You approve; it merges to production and flips the flags on.
+4. **Bug-hunt loop — it watches.** It reads production logs and files new bug tickets straight back into the queue, closing the loop.
+
+The whole thing coordinates through **ordinary issues, labels, and PRs** — no central coordinator, no dashboard, no metered compute. It's just your agent, your token budget, and the tracker you already have.
 
 ---
 
