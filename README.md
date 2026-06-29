@@ -15,6 +15,8 @@ vision-driven workflow. I'll answer your setup questions.
 
 Then just answer the questions — and you're running.
 
+**Want it to build faster?** Add more build machines anytime — each extra machine just runs the build loop in parallel on its own token budget, and an atomic per-ticket claim keeps them from colliding. See *Scale across machines* below.
+
 ---
 
 <details>
@@ -46,6 +48,18 @@ A one-time setup pass scaffolds a project with:
 - **Two-tier verification** — local dogfooding before merge, authenticated staging evidence before release — so nothing reaches production un-exercised.
 - **An optional autonomous loop**: three scheduled tasks (build / release / bug-hunt) that carry an idea from "pushed" all the way to "shipped and monitored", contacting the owner only at the release gate.
 - **Living docs**: `CONTEXT.md`, PRDs under `docs/prds/`, and ADRs under `docs/adr/`, kept current so any cold agent session can pick the project up.
+
+</details>
+
+<details>
+<summary><b>Scale across machines (optional)</b></summary>
+
+The build loop is **horizontally scalable** — the cheapest way to ship faster is to add another dev/build machine that just builds in parallel. There's **no central coordinator and no global lock**: machines coordinate purely through the ticket queue. On each additional machine:
+
+- Clone the repo, install dependencies, and add the same gitignored env the primary uses (read-only monitoring credential, flag token, any staging-access token).
+- Register **only** the build loop (`autodev-build`) on a **staggered** schedule — a different cron minute from the others. Leave the **release** and **bug-hunt** loops on the **primary** machine only (it owns production monitoring and the approval gate).
+
+An **atomic per-ticket claim** guarantees no two machines ever build the same ticket. Each machine you add is another worker pulling from the same queue on its own token budget; removing one is just deleting its build task (in-flight work is auto-reclaimed). Full procedure: [`SKILL.md`](autodev-setup/SKILL.md) step 7, claim protocol in [`githost-github.md`](autodev-setup/presets/githost-github.md).
 
 </details>
 

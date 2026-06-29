@@ -77,7 +77,17 @@ Set up the cascade so the owner's front door is a **live grilling conversation**
 - **Front-door session:** optionally set up one persistent named session on the host machine as the grilling front door; otherwise the grill runs in any local session.
 - **Staging auth for evidence (optional but recommended):** enable the dev test-account login on staging, env-gated to `development OR staging`, **never production** (see § Production access). Without it, staging evidence is public-surface + health only.
 
-### 7. Hand over
+### 7. (Optional) Add more build machines
+
+The build loop is **horizontally scalable** — the cheapest way to ship faster is to add another machine that just builds in parallel. Do this now or any time later. On each additional machine:
+
+- Clone the repo, install dependencies, and drop in the same **gitignored env** the primary uses (read-only monitoring credential, flag-management token, any staging-access token).
+- Register **only** the `autodev-build` task (per the loop runtime preset) at a **staggered** schedule — a *different* cron minute from the other machines — so claims rarely contend. Do **not** add `autodev-release` or `autodev-bug-hunt` here; those stay on the **primary** (it owns prod monitoring + the approval gate).
+- That's it. The **atomic per-issue claim** (git-host adapter § Claiming work) guarantees no two machines ever build the same ticket — there is no global lock, no central coordinator. Record the extra machine(s) in `config.loop.host`.
+
+Each machine you add is another worker pulling from the same ticket queue on its own token budget. Removing one is just deleting its `autodev-build` task; in-flight claims are auto-reclaimed after the TTL.
+
+### 8. Hand over
 
 Commit everything as the setup commit (on `develop`, PR'd to `main`). Then tell the owner, at their technical level, how the workflow runs:
 
