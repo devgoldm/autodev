@@ -16,7 +16,20 @@ vision-driven workflow. I'll answer your setup questions.
 
 **Step 2 — answer its questions.** It interviews you, picks the presets for your stack/tracker/agent, and scaffolds everything. When it's done, you're running.
 
-**Step 3 *(optional)* — scale across machines.** Want it to build faster? Add more build machines anytime — each one just runs the build loop in parallel on its own token budget, and an atomic per-ticket claim keeps them from colliding. See *Scale across machines* below.
+**Step 3 *(optional)* — add more build machines.** Want it to build faster? On any other machine, **check out your repo**, then paste this — it joins as a build-only worker pulling from the same ticket queue (your primary machine keeps release + monitoring):
+
+```text
+Set this machine up as an additional autodev BUILD machine for this repo — not
+the primary. If the autodev-setup skill isn't installed, run
+`npx skills add devgoldm/autodev`. Read .claude/autodev/config.json and
+.claude/autodev/ORCHESTRATION.md, then register ONLY the autodev-build loop, on a
+staggered schedule (a different cron minute from the other machines). Do NOT add
+the release or bug-hunt loops — those stay on the primary. Install dependencies
+and set up the gitignored env it needs (read-only monitoring credential, flag
+token, any staging-access token); ask me for anything you don't have.
+```
+
+Each extra machine builds in parallel on its own token budget; an atomic per-ticket claim keeps them from colliding. More detail in *Scale across machines* below.
 
 ## How it works
 
@@ -68,10 +81,12 @@ A one-time setup pass scaffolds a project with:
 <details>
 <summary><b>Scale across machines (optional)</b></summary>
 
-The build loop is **horizontally scalable** — the cheapest way to ship faster is to add another dev/build machine that just builds in parallel. There's **no central coordinator and no global lock**: machines coordinate purely through the ticket queue. On each additional machine:
+The build loop is **horizontally scalable** — the cheapest way to ship faster is to add another machine that just builds in parallel. There's **no central coordinator and no global lock**: machines coordinate purely through the ticket queue. Adding one is two steps:
 
-- Clone the repo, install dependencies, and add the same gitignored env the primary uses (read-only monitoring credential, flag token, any staging-access token).
-- Register **only** the build loop (`autodev-build`) on a **staggered** schedule — a different cron minute from the others. Leave the **release** and **bug-hunt** loops on the **primary** machine only (it owns production monitoring and the approval gate).
+1. **Check out your repo** on the machine.
+2. **Paste the build-machine prompt** from Step 3 above.
+
+That's it — the prompt registers **only** the build loop (`autodev-build`) on a staggered schedule and leaves the **release** and **bug-hunt** loops on the **primary** machine (it owns production monitoring and the approval gate).
 
 An **atomic per-ticket claim** guarantees no two machines ever build the same ticket. Each machine you add is another worker pulling from the same queue on its own token budget; removing one is just deleting its build task (in-flight work is auto-reclaimed). Full procedure: [`SKILL.md`](autodev-setup/SKILL.md) step 7, claim protocol in [`githost-github.md`](autodev-setup/presets/githost-github.md).
 
