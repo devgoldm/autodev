@@ -11,11 +11,13 @@ Read `.claude/autodev/METHODOLOGY.md` and `.claude/autodev/config.json` first (a
 
 1. **Branch**: `feature/refactor-<date>` off fresh `develop`. Confirm the full test suite is green before touching anything — that's the baseline.
 
-2. **Find targets.** Read `CONTEXT.md` and `docs/adr/` for the domain language and load-bearing decisions, then look for deepening opportunities, in priority order:
+2. **Find targets.** Read `CONTEXT.md` and `docs/adr/` for the domain language and load-bearing decisions, then run the bundled **`thermo-nuclear-code-quality-review`** skill (`.claude/skills/thermo-nuclear-code-quality-review/`) over the code that changed since the last refactor pass (diff `develop` against the previous `feature/refactor-<date>` tag/branch, or the whole module if that's unclear). Use its standards as the lens for what counts as a target — file-size blowups, spaghetti-condition growth, thin/“magic” abstractions, boundary leaks, and "code judo" simplifications. Combine its findings with the priority list below:
    - Dead code: flags fully released and stable → delete the OFF code path, then delete the flag itself via the flag API (code-first; owner standing order to manage flags via the API, not AskUserQuestion; skip the flag deletion if `config.flags.mechanism` is `none`); unused exports, unreachable branches.
    - Duplication introduced by recent features (subagents working independently tend to re-create helpers).
    - Naming drift from `CONTEXT.md` language — rename code to match the domain terms.
    - Oversized files/modules and tangled coupling that make navigation expensive.
+
+   The thermo-nuclear skill is **ambitious** by design (it pushes for restructurings that delete whole branches/layers); the refactor pass stays **behavior-preserving**. So treat each thermo-nuclear finding as a candidate target, then apply the § Rules gate in step 3: take the ones whose tests make a behavior-preserving fix safe, and icebox the rest as work items rather than reaching for behavior changes.
 
 3. **Refactor conservatively** via subagents (serial, same branch, per METHODOLOGY; pinned to `config.models.subagents`): each subagent gets one target, must keep behavior identical, and must keep the test suite green — run it before and after. Skip any target whose refactor would change behavior or whose tests don't cover it well enough to be safe; note those as `icebox` work items (or in `BACKLOG.md` Icebox) instead.
 

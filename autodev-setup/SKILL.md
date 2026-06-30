@@ -34,7 +34,7 @@ Determine if this is a new (empty dir / no app code) or existing project. Then i
 
 ### 2. Check prerequisites
 
-See [SETUP-REFERENCE.md](SETUP-REFERENCE.md) § Prerequisites for the universal list (a git-host CLI, a browser-automation tool, the context-budget setting). Autodev's grilling/refactor/QA capabilities are **bundled** (the `grill` skill + the commands themselves) — no external skills to install. Then check the **preset-specific** prerequisites in each selected preset (e.g. the stack preset's toolchain + credentials, the git-host adapter's CLI auth, the loop runtime's scheduler). Check and report; offer to install what's missing rather than failing.
+See [SETUP-REFERENCE.md](SETUP-REFERENCE.md) § Prerequisites for the universal list (a git-host CLI, a browser-automation tool, the context-budget setting). Autodev's grilling/refactor/QA capabilities are **bundled** (the `grill` skill, the `thermo-nuclear-code-quality-review` skill used by `/refactor-pass`, and the commands themselves) — no external skills to install. Then check the **preset-specific** prerequisites in each selected preset (e.g. the stack preset's toolchain + credentials, the git-host adapter's CLI auth, the loop runtime's scheduler). Check and report; offer to install what's missing rather than failing.
 
 ### 3. Scaffold or onboard
 
@@ -60,6 +60,7 @@ Copy from this skill's `templates/` directory into the project:
 | `templates/release/` | `.claude/skills/release/` |
 | `templates/bug-hunt/` | `.claude/skills/bug-hunt/` |
 | `templates/refactor-pass/` | `.claude/skills/refactor-pass/` |
+| `templates/thermo-nuclear-code-quality-review/` | `.claude/skills/thermo-nuclear-code-quality-review/` (bundled strict code-quality review, invoked by `/refactor-pass`) |
 | `templates/scheduled-tasks/*` | the loop runtime's task location (e.g. `~/.claude/scheduled-tasks/` for Claude Code — see the runtime preset; fill in `<PLACEHOLDER>`s per step 6) |
 
 Also copy any preset-specific project artifacts the selected presets call for (e.g. the Cloudflare preset's `cloudflare-token.md`). Create `docs/prds/` and `docs/adr/`. Templates are copied verbatim except `config.json`, `VISION.md`, `BACKLOG.md`, `ORCHESTRATION.md`, the preset artifacts, and the `scheduled-tasks/` SKILLs, which you fill in. The `scheduled-tasks/` templates are the operative prompts the loops run — place them where the loop runtime expects (the runtime preset says where).
@@ -99,4 +100,4 @@ Commit everything as the setup commit (on `develop`, PR'd to `main`). Then tell 
 
 ## Review checklist
 
-Before finishing: config.json filled in (including the selected presets), all five project commands present, VISION.md has real content (not placeholder), CONTEXT.md exists, develop branch exists and is default for PRs, the flags mechanism actually works (one `example` flag wired end-to-end — unless `flags.mechanism: "none"` was recorded), the test account can log in, and any **preset-specific** setup is complete and recorded (e.g. Cloudflare least-privilege API token minted, placed in CI secrets + local, verified, and documented). Also: `ORCHESTRATION.md` filled in; the approval + lifecycle labels created; and the three loops registered with the loop runtime from the filled-in templates and recorded in `config.loop` (with `loop.claim` + `loop.release.host`).
+Before finishing: config.json filled in (including the selected presets), all five project commands present, the bundled helper skills present (`.claude/skills/grill/` and `.claude/skills/thermo-nuclear-code-quality-review/`), VISION.md has real content (not placeholder), CONTEXT.md exists, develop branch exists and is default for PRs, the flags mechanism actually works (one `example` flag wired end-to-end — unless `flags.mechanism: "none"` was recorded), the test account can log in, and any **preset-specific** setup is complete and recorded (e.g. Cloudflare least-privilege API token minted, placed in CI secrets + local, verified, and documented). Also: `ORCHESTRATION.md` filled in; the approval + lifecycle labels created; and the three loops registered with the loop runtime from the filled-in templates and recorded in `config.loop` (with `loop.claim` + `loop.release.host`).

@@ -109,7 +109,7 @@ Keep these current as part of every loop — they are what lets the next session
 Autodev is self-contained: every capability its commands rely on ships **inside the project**, installed under `.claude/skills/` at setup. The commands never depend on a skill that happens to be in a contributor's personal global collection, so the project behaves identically for anyone who clones it.
 
 - **Grilling** is autodev's own bundled **`grill`** skill (`.claude/skills/grill/`), used by `/vision`. It interviews one question at a time, challenges against `VISION.md`/`CONTEXT.md`/ADRs, and updates docs inline.
-- **Refactor target-finding** lives directly in `/refactor-pass` (it reads `CONTEXT.md`/ADRs and works a prioritised target list).
+- **Refactor target-finding** lives in `/refactor-pass`, which reads `CONTEXT.md`/ADRs and runs autodev's bundled **`thermo-nuclear-code-quality-review`** skill (`.claude/skills/thermo-nuclear-code-quality-review/`) as its lens for structural targets, then works a prioritised, behavior-preserving list.
 - **Production QA** lives directly in `/bug-hunt` (systematic journey-walking + edge probing).
 
 The only genuinely external dependency is a **browser-automation tool** (used by both verification tiers): any tool that can drive a browser with custom request headers, persistent login, screenshots, and short recordings — named in `config.evidence.tool`. That's a *tool*, not a skill, and there's no single-vendor assumption.
